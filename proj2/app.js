@@ -1,12 +1,12 @@
-import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../../libs/utils.js";
-import { ortho, lookAt, flatten, mult } from "../../libs/MV.js";
-import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multTranslation } from "../../libs/stack.js";
+import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
+import { ortho, lookAt, flatten, mult } from "../libs/MV.js";
+import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multTranslation } from "../libs/stack.js";
 
-import * as SPHERE from '../../libs/objects/sphere.js';
-import * as BUNNY from '../../libs/objects/bunny.js';
-import * as TORUS from '../../libs/objects/torus.js';
-import * as CUBE from '../../libs/objects/cube.js';
-import * as PYRAMID from '../../libs/objects/pyramid.js';
+import * as SPHERE from '../libs/objects/sphere.js';
+import * as BUNNY from '../libs/objects/bunny.js';
+import * as TORUS from '../libs/objects/torus.js';
+import * as CUBE from '../libs/objects/cube.js';
+import * as PYRAMID from '../libs/objects/pyramid.js';
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -42,6 +42,8 @@ const MOON_ORBIT = 363396*ORBIT_SCALE;
 const MOON_YEAR = 28;
 const MOON_DAY = 0;
 
+const GROUND = 1;
+
 const VP_DISTANCE = EARTH_ORBIT;
 
 
@@ -57,7 +59,7 @@ function setup(shaders)
 
     let mProjection = ortho(-VP_DISTANCE*aspect,VP_DISTANCE*aspect, -VP_DISTANCE, VP_DISTANCE,-3*VP_DISTANCE,3*VP_DISTANCE);
 
-    mode = gl.LINES; 
+    mode = gl.LINES;
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
@@ -65,7 +67,7 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                mode = gl.LINES; 
+                mode = gl.LINES;
                 break;
             case 's':
                 mode = gl.TRIANGLES;
@@ -82,14 +84,14 @@ function setup(shaders)
         }
     }
 
-    gl.clearColor(0.2, 0.0, 0.2, 1.0);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     SPHERE.init(gl);
     BUNNY.init(gl);
     TORUS.init(gl);
     CUBE.init(gl);
     PYRAMID.init(gl);
     gl.enable(gl.DEPTH_TEST);   // Enables Z-buffer depth test
-    
+
     window.requestAnimationFrame(render);
 
 
@@ -140,7 +142,7 @@ function setup(shaders)
         BUNNY.draw(gl, program, mode);
     }
 
-    function Earth(){   
+    function Earth(){
         multScale([SUN_DIAMETER, SUN_DIAMETER, SUN_DIAMETER]);
         multRotationY(360*time/EARTH_DAY);
 
@@ -165,7 +167,7 @@ function setup(shaders)
         popMatrix();
         pushMatrix();
         Moon();
-        popMatrix();  
+        popMatrix();
     }
 
     function MercAndVen(){
@@ -176,8 +178,14 @@ function setup(shaders)
         popMatrix();
         pushMatrix();
         Venus();
-        popMatrix();  
+        popMatrix();
 
+    }
+
+    function ground(){
+        multScale([200, GROUND, 200])
+        uploadModelView()
+        CUBE.draw(gl, program, mode)
     }
 
     function render()
@@ -186,11 +194,11 @@ function setup(shaders)
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
+
         gl.useProgram(program);
-        
+
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-    
+
         loadMatrix(lookAt([0,VP_DISTANCE,VP_DISTANCE], [0,0,0], [0,1,0]));
 
         pushMatrix();
@@ -212,8 +220,14 @@ function setup(shaders)
         pushMatrix();
         MercAndVen();
         popMatrix();
+
+        pushMatrix();
+        ground();
+        popMatrix();
     }
 }
+
+
 
 const urls = ["shader.vert", "shader.frag"];
 loadShadersFromURLS(urls).then(shaders => setup(shaders))
