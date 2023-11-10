@@ -1,12 +1,12 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
-import { ortho, lookAt, flatten } from "/libs/MV.js";
+import { ortho, lookAt, flatten } from "../libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation } from "../libs/stack.js";
 import { GUI } from "../libs/dat.gui.module.js"
 
 
-import * as SPHERE from '../../libs/objects/sphere.js';
-import * as CUBE from '../../libs/objects/cube.js';
-import * as CYLINDER from'../../libs/objects/cylinder.js';
+import * as SPHERE from '../libs/objects/sphere.js';
+import * as CUBE from '../libs/objects/cube.js';
+import * as CYLINDER from'../libs/objects/cylinder.js';
 
 
 /** @type WebGLRenderingContext */
@@ -156,7 +156,7 @@ function setup(shaders)
         gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH*1.0);
         multScale([GROUND_LENGTH, 1, GROUND_LENGTH])
         uploadModelView();
-        CUBE.draw(gl, program, mode);
+        CUBE.draw(gl, program, gl.TRIANGLES);
         gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), 0.0);
 
     }
@@ -169,7 +169,7 @@ function setup(shaders)
             multTranslation([0, i, 0]);
             uploadModelView();
             CUBE.draw(gl, program, mode);
-            popMatrix()
+            popMatrix();
         }
     }
     function baseLift(){
