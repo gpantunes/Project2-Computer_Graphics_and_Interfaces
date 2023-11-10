@@ -1,12 +1,13 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
 import { ortho, lookAt, flatten } from "../libs/MV.js";
-import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation } from "../libs/stack.js";
+import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation, multRotationZ } from "../libs/stack.js";
 import { GUI } from "../libs/dat.gui.module.js"
 
 
 import * as SPHERE from '../libs/objects/sphere.js';
 import * as CUBE from '../libs/objects/cube.js';
-import * as CYLINDER from'../libs/objects/cylinder.js';
+import * as CYLINDER from '../libs/objects/cylinder.js';
+import * as PYRAMID from '../libs/objects/pyramid.js';
 
 
 /** @type WebGLRenderingContext */
@@ -28,10 +29,11 @@ const BASE_SQUARE_SIDE = 1;
 const BASE_SQUARE_COUNT = 10;
 const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 
-const zoom = 50.0;
+const zoom = 15.0;
 
 
 let BASE_LIFT = 0;
+let ROTATION_ANGLE = 0;
 
 
 function setup(shaders)
@@ -60,9 +62,15 @@ function setup(shaders)
             case 's':
                 mode = gl.TRIANGLES;
                 break;
-            case 'p':
-                animation = !animation;
+            case 'l':
+                ROTATION_ANGLE -= 5;
                 break;
+            case 'j':
+                ROTATION_ANGLE += 5;
+                break;
+            case 'r':
+                angles.theta = 0;
+                angles.gamma = 0;
             case '+':
                 if(animation) speed *= 1.1;
                 break;
@@ -93,6 +101,18 @@ function setup(shaders)
                 break;
             case 'k':
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, 0);
+                break;
+            case 'ArrowLeft':
+                angles.theta += 5;
+                break;
+            case 'ArrowRight':
+                angles.theta -= 5;
+                break;
+            case 'ArrowUp':
+                angles.gamma += 5;
+                break;
+            case 'ArrowDown':
+                angles.gamma -= 5;
                 break;
         }
     }
@@ -148,9 +168,11 @@ function setup(shaders)
     {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
     }
+
     function changeColor(rgb){
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), rgb);
     }
+
     function ground()
     {
         gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH*1.0);
@@ -160,6 +182,7 @@ function setup(shaders)
         gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), 0.0);
 
     }
+
     function base(){
         changeColor([1.0, 1.0, 0.0]);
         multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05, 0.0])
@@ -172,6 +195,7 @@ function setup(shaders)
             popMatrix();
         }
     }
+
     function baseLift(){
         changeColor([1.0, 1.0, 0.0]);
         multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05+BASE_LIFT, 0.0])
@@ -186,11 +210,27 @@ function setup(shaders)
     }
     function rotationCylinder(){
         changeColor([0.5, 0.5, 0.5]);
-        multScale([2, 0.5, 2])
-        multTranslation([0, 1.5, 0])
+        multScale([2, 0.5, 2]);
+        multRotationY(ROTATION_ANGLE);
+        multTranslation([0, 1.5, 0]);
         uploadModelView();
         CYLINDER.draw(gl, program, mode);
     }
+
+    function boom(){
+        changeColor([1.0, 0.0, 0.0]);
+        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05, -2])
+        for (let i = 0; i < BASE_SQUARE_COUNT; i++){
+            pushMatrix();
+            multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
+            multRotationX(90);
+            multTranslation([0, i, 0]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+            popMatrix();
+        }
+    }
+
 
     function render()
     {
@@ -215,6 +255,9 @@ function setup(shaders)
         pushMatrix();
             baseLift();
             rotationCylinder();
+            pushMatrix();
+                boom();
+            popMatrix();
         popMatrix();
     }
 
