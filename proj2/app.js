@@ -23,11 +23,19 @@ let angles;
 let axoview = true;
 
 
-const GROUND_LENGTH = 20;
+const GROUND_LENGTH = 65;
 
+//Base constants
 const BASE_SQUARE_SIDE = 1;
-const BASE_SQUARE_COUNT = 10;
+const BASE_SQUARE_COUNT = 8;
+
+//Lift constants
+const LIFT_SQUARE_SIDE = 0.8;
+const LIFT_SQUARE_COUNT = 10;
 const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
+
+//Boom constants
+const BOOM_SIZE = 16;
 
 const zoom = 15.0;
 
@@ -59,7 +67,8 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                HOOK_LENGTH += 5; 
+                HOOK_LENGTH += 5;
+                if(HOOK_LENGTH > 210) HOOK_LENGTH = 210; 
                 break;
             case 's':
                 HOOK_LENGTH -= 5;
@@ -67,11 +76,11 @@ function setup(shaders)
                 break;
             case 'a':
                 TROLLEY_POSITION += 1;
-                if(TROLLEY_POSITION > BASE_SQUARE_COUNT-1) TROLLEY_POSITION = BASE_SQUARE_COUNT-1;
+                if(TROLLEY_POSITION > BOOM_SIZE-1) TROLLEY_POSITION = BOOM_SIZE-1;
                 break;
             case 'd':
                 TROLLEY_POSITION -= 1;
-                if(TROLLEY_POSITION < BASE_SQUARE_COUNT-7) TROLLEY_POSITION = BASE_SQUARE_COUNT-7;
+                if(TROLLEY_POSITION < BOOM_SIZE-10) TROLLEY_POSITION = BOOM_SIZE-10;
                 break;
             case 'l':
                 ROTATION_ANGLE -= 5;
@@ -87,6 +96,10 @@ function setup(shaders)
                 break;
             case '-':
                 if(animation) speed /= 1.1;
+                break;
+            case '0':
+                if(mode == gl.TRIANGLES) mode = gl.LINES;
+                else mode = gl.TRIANGLES;
                 break;
             case '1':
                 // Front view
@@ -109,6 +122,7 @@ function setup(shaders)
                 break;
             case 'i':
                 BASE_LIFT = Math.min(BASE_LIFT+BASE_LIFT_OFFSET, BASE_SQUARE_COUNT*BASE_SQUARE_SIDE);
+                if(BASE_LIFT > 6) BASE_LIFT = 6;
                 break;
             case 'k':
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, 0);
@@ -202,7 +216,7 @@ function setup(shaders)
             multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, gl.LINES);
+            CUBE.draw(gl, program, mode);
             popMatrix();
         }
     }
@@ -210,34 +224,34 @@ function setup(shaders)
     function baseLift(){
         changeColor([1.0, 1.0, 0.0]);
         multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05+BASE_LIFT, 0.0])
-        for (let i = 0; i < BASE_SQUARE_COUNT; i++){
-            if(i < BASE_SQUARE_COUNT-1) pushMatrix();
-            multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
+        for (let i = 0; i < LIFT_SQUARE_COUNT; i++){
+            if(i < LIFT_SQUARE_COUNT-1) pushMatrix();
+            multScale([LIFT_SQUARE_SIDE, BASE_SQUARE_SIDE, LIFT_SQUARE_SIDE]);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, gl.LINES);
-            if(i < BASE_SQUARE_COUNT-1) popMatrix();
+            CUBE.draw(gl, program, mode);
+            if(i < LIFT_SQUARE_COUNT-1) popMatrix();
         }
     }
     function rotationCylinder(){
         changeColor([0.5, 0.5, 0.5]);
-        multScale([2, 0.5, 2]);
+        multScale([3, 0.5, 3]);
         multRotationY(ROTATION_ANGLE);
         multTranslation([0, 1.5, 0]);
         uploadModelView();
-        CYLINDER.draw(gl, program, gl.LINES);
+        CYLINDER.draw(gl, program, mode);
     }
 
     function boom(){
         changeColor([1.0, 0.0, 0.0]);
-        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05, -2])
-        for (let i = 0; i < BASE_SQUARE_COUNT; i++){
+        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.6, -4*0.7])
+        multScale([0.7, 2.0, 0.7]);
+        for (let i = 0; i < BOOM_SIZE; i++){
             pushMatrix();
-            multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
             multRotationX(90);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, gl.LINES);
+            CUBE.draw(gl, program, mode);
             popMatrix();
         }
     }
@@ -254,14 +268,22 @@ function setup(shaders)
         changeColor([1.0, 1.0, 1.0]);
         for(let i = 0; i < HOOK_LENGTH; i++){
             pushMatrix();
-            multScale([0.1, 1, 0.1]);
+            multScale([0.1, 0.5, 0.1]);
             multRotationZ(-90);
             multTranslation([i+0.6, 0.0, 0.0]);
             uploadModelView();
             CUBE.draw(gl, program, gl.TRIANGLES);
             popMatrix();
         }
-        
+    }
+
+    function counterWeight(){
+        changeColor([1.0, 1.0, 1.0]);
+        multScale([1.0, 1.5, 1.0]);
+        multTranslation([0.0, -0.82, 1.0]);
+        uploadModelView();
+        CUBE.draw(gl, program, gl.TRIANGLES);
+        popMatrix();
     }
 
 
@@ -291,6 +313,7 @@ function setup(shaders)
             pushMatrix();
                 boom();
                 pushMatrix();
+                    counterWeight();
                     trolley();
                     pushMatrix();
                     hook();
