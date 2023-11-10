@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
-import { ortho, lookAt, flatten } from "../libs/MV.js";
+import { ortho, lookAt, flatten, mult } from "../libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation, multRotationZ } from "../libs/stack.js";
 import { GUI } from "../libs/dat.gui.module.js"
 
@@ -34,6 +34,8 @@ const zoom = 15.0;
 
 let BASE_LIFT = 0;
 let ROTATION_ANGLE = 0;
+let TROLLEY_POSITION = BASE_SQUARE_COUNT - 1;
+let HOOK_LENGTH = 10;
 
 
 function setup(shaders)
@@ -57,10 +59,19 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                mode = gl.LINES; 
+                HOOK_LENGTH += 5; 
                 break;
             case 's':
-                mode = gl.TRIANGLES;
+                HOOK_LENGTH -= 5;
+                if(HOOK_LENGTH < 0) HOOK_LENGTH = 0;
+                break;
+            case 'a':
+                TROLLEY_POSITION += 1;
+                if(TROLLEY_POSITION > BASE_SQUARE_COUNT-1) TROLLEY_POSITION = BASE_SQUARE_COUNT-1;
+                break;
+            case 'd':
+                TROLLEY_POSITION -= 1;
+                if(TROLLEY_POSITION < BASE_SQUARE_COUNT-7) TROLLEY_POSITION = BASE_SQUARE_COUNT-7;
                 break;
             case 'l':
                 ROTATION_ANGLE -= 5;
@@ -89,7 +100,7 @@ function setup(shaders)
                 break;
             case '3':
                 // Right view
-                mView = lookAt([500, 0, 0], [0, 0, 0], [0, 1, 0]);
+                mView = lookAt([1, 0, 0], [0, 0, 0], [0, 1, 0]);
                 axoview = false;
                 break;
             case '4':
@@ -191,7 +202,7 @@ function setup(shaders)
             multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, gl.LINES);
             popMatrix();
         }
     }
@@ -200,12 +211,12 @@ function setup(shaders)
         changeColor([1.0, 1.0, 0.0]);
         multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05+BASE_LIFT, 0.0])
         for (let i = 0; i < BASE_SQUARE_COUNT; i++){
-            if(i < BASE_SQUARE_COUNT-1) pushMatrix()
+            if(i < BASE_SQUARE_COUNT-1) pushMatrix();
             multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
-            if(i < BASE_SQUARE_COUNT-1) popMatrix()
+            CUBE.draw(gl, program, gl.LINES);
+            if(i < BASE_SQUARE_COUNT-1) popMatrix();
         }
     }
     function rotationCylinder(){
@@ -214,7 +225,7 @@ function setup(shaders)
         multRotationY(ROTATION_ANGLE);
         multTranslation([0, 1.5, 0]);
         uploadModelView();
-        CYLINDER.draw(gl, program, mode);
+        CYLINDER.draw(gl, program, gl.LINES);
     }
 
     function boom(){
@@ -226,9 +237,31 @@ function setup(shaders)
             multRotationX(90);
             multTranslation([0, i, 0]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, gl.LINES);
             popMatrix();
         }
+    }
+
+    function trolley(){
+        changeColor([0.0, 1.0, 0.0]);
+        multScale([1.0, 0.1, 1.0]);
+        multTranslation([0.0, -6.0, TROLLEY_POSITION]);
+        uploadModelView();
+        CUBE.draw(gl, program, gl.TRIANGLES);
+    }
+
+    function hook(){
+        changeColor([1.0, 1.0, 1.0]);
+        for(let i = 0; i < HOOK_LENGTH; i++){
+            pushMatrix();
+            multScale([0.1, 1, 0.1]);
+            multRotationZ(-90);
+            multTranslation([i+0.6, 0.0, 0.0]);
+            uploadModelView();
+            CUBE.draw(gl, program, gl.TRIANGLES);
+            popMatrix();
+        }
+        
     }
 
 
@@ -257,7 +290,10 @@ function setup(shaders)
             rotationCylinder();
             pushMatrix();
                 boom();
-            popMatrix();
+                pushMatrix();
+                    trolley();
+                    pushMatrix();
+                    hook();
         popMatrix();
     }
 
