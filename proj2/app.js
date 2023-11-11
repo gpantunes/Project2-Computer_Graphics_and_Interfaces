@@ -27,11 +27,11 @@ const GROUND_LENGTH = 65;
 
 //Base constants
 const BASE_SQUARE_SIDE = 2;
-const BASE_SQUARE_COUNT = 15;
+const BASE_SQUARE_COUNT = 10;
 
 //Lift constants
 const LIFT_SQUARE_SIDE = 0.8;
-const LIFT_SQUARE_COUNT = 8;
+const LIFT_SQUARE_COUNT = 12;
 const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 
 //Boom constants
@@ -70,7 +70,7 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                HOOK_LENGTH = Math.min(150, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.min(125, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 's':
                 HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
@@ -271,7 +271,7 @@ function setup(shaders)
     function hook(){
         changeColor([1.0, 1.0, 1.0]);
         pushMatrix();
-            multTranslation([0.6, -1.0-HOOK_LENGTH/2, 0.0]);
+            multTranslation([0.0, -1.0-HOOK_LENGTH/2, 0.0]);
             multScale([0.1, HOOK_LENGTH, 0.1]);
             uploadModelView();
             CYLINDER.draw(gl, program, mode);
