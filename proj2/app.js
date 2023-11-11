@@ -41,7 +41,7 @@ const HOOK_DESCENT_OFFSET = 5;
 const zoom = 30.0;
 
 
-let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)
+let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)                 //The last value is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
 let ROTATION_ANGLE = 0;
 let TROLLEY_POSITION = 7;
 let HOOK_LENGTH = 10;
