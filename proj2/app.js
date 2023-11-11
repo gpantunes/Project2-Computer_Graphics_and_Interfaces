@@ -26,7 +26,7 @@ let axoview = true;
 const GROUND_LENGTH = 65;
 
 //Base constants
-const BASE_SQUARE_SIDE = 1;
+const BASE_SQUARE_SIDE = 2;
 const BASE_SQUARE_COUNT = 20;       //TODO: FIX WHEN BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
 
 //Lift constants
@@ -36,6 +36,7 @@ const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 
 //Boom constants
 const BOOM_SIZE = 20;               //PRE: BOOM_SIZE >= 10
+const HOOK_DESCENT_OFFSET = 5;
 
 const zoom = 30.0;
 
@@ -69,12 +70,10 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                HOOK_LENGTH += 5;
-                if(HOOK_LENGTH > 210) HOOK_LENGTH = 210; 
+                HOOK_LENGTH = Math.min(150, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 's':
-                HOOK_LENGTH -= 5;
-                if(HOOK_LENGTH < 0) HOOK_LENGTH = 0;
+                HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
@@ -264,20 +263,18 @@ function setup(shaders)
         multScale([1.0, 0.1, 1.0]);
         multTranslation([0.0, -6.0, TROLLEY_POSITION]);
         uploadModelView();
-        CUBE.draw(gl, program, gl.TRIANGLES);
+        CUBE.draw(gl, program, mode);
     }
+
 
     function hook(){
         changeColor([1.0, 1.0, 1.0]);
-        for(let i = 0; i < HOOK_LENGTH; i++){
-            pushMatrix();
-            multScale([0.1, 0.5, 0.1]);
-            multRotationZ(-90);
-            multTranslation([i+0.6, 0.0, 0.0]);
+        pushMatrix();
+            multTranslation([0.6, -1.0-HOOK_LENGTH/2, 0.0]);
+            multScale([0.1, HOOK_LENGTH, 0.1]);
             uploadModelView();
-            CUBE.draw(gl, program, gl.TRIANGLES);
-            popMatrix();
-        }
+            CYLINDER.draw(gl, program, mode);
+        popMatrix();
     }
 
     function counterWeight(){
