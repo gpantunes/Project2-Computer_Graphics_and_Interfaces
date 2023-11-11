@@ -27,11 +27,11 @@ const GROUND_LENGTH = 65;
 
 //Base constants
 const BASE_SQUARE_SIDE = 2;
-const BASE_SQUARE_COUNT = 20;       //TODO: FIX WHEN BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
+const BASE_SQUARE_COUNT = 15;
 
 //Lift constants
 const LIFT_SQUARE_SIDE = 0.8;
-const LIFT_SQUARE_COUNT = 15;
+const LIFT_SQUARE_COUNT = 8;
 const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 
 //Boom constants
@@ -41,7 +41,7 @@ const HOOK_DESCENT_OFFSET = 5;
 const zoom = 30.0;
 
 
-let BASE_LIFT = 0;
+let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)
 let ROTATION_ANGLE = 0;
 let TROLLEY_POSITION = 7;
 let HOOK_LENGTH = 10;
@@ -123,7 +123,8 @@ function setup(shaders)
                 BASE_LIFT = Math.min(BASE_LIFT+BASE_LIFT_OFFSET, (BASE_SQUARE_COUNT-2)*BASE_SQUARE_SIDE);
                 break;
             case 'k':
-                BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, 0);
+                //The last Math.max is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
+                BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE));
                 break;
             case 'ArrowLeft':
                 angles.theta += 5;
