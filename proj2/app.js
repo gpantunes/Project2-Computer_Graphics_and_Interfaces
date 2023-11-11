@@ -27,22 +27,22 @@ const GROUND_LENGTH = 65;
 
 //Base constants
 const BASE_SQUARE_SIDE = 1;
-const BASE_SQUARE_COUNT = 8;
+const BASE_SQUARE_COUNT = 20;       //TODO: FIX WHEN BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
 
 //Lift constants
 const LIFT_SQUARE_SIDE = 0.8;
-const LIFT_SQUARE_COUNT = 10;
+const LIFT_SQUARE_COUNT = 15;
 const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 
 //Boom constants
-const BOOM_SIZE = 16;
+const BOOM_SIZE = 20;               //PRE: BOOM_SIZE >= 10
 
-const zoom = 15.0;
+const zoom = 30.0;
 
 
 let BASE_LIFT = 0;
 let ROTATION_ANGLE = 0;
-let TROLLEY_POSITION = BASE_SQUARE_COUNT - 1;
+let TROLLEY_POSITION = 7;
 let HOOK_LENGTH = 10;
 
 let folder;
@@ -77,12 +77,10 @@ function setup(shaders)
                 if(HOOK_LENGTH < 0) HOOK_LENGTH = 0;
                 break;
             case 'a':
-                TROLLEY_POSITION += 1;
-                if(TROLLEY_POSITION > BOOM_SIZE-1) TROLLEY_POSITION = BOOM_SIZE-1;
+                TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
                 break;
             case 'd':
-                TROLLEY_POSITION -= 1;
-                if(TROLLEY_POSITION < BOOM_SIZE-10) TROLLEY_POSITION = BOOM_SIZE-10;
+                TROLLEY_POSITION = Math.max(7, TROLLEY_POSITION-1);
                 break;
             case 'l':
                 ROTATION_ANGLE -= 5;
@@ -123,23 +121,26 @@ function setup(shaders)
                 axoview = true;
                 break;
             case 'i':
-                BASE_LIFT = Math.min(BASE_LIFT+BASE_LIFT_OFFSET, BASE_SQUARE_COUNT*BASE_SQUARE_SIDE);
-                if(BASE_LIFT > 6) BASE_LIFT = 6;
+                BASE_LIFT = Math.min(BASE_LIFT+BASE_LIFT_OFFSET, (BASE_SQUARE_COUNT-2)*BASE_SQUARE_SIDE);
                 break;
             case 'k':
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, 0);
                 break;
             case 'ArrowLeft':
                 angles.theta += 5;
+                if(angles.theta >= 360) angles.theta -= 360;
                 break;
             case 'ArrowRight':
                 angles.theta -= 5;
+                if(angles.theta < 0) angles.theta += 360;
                 break;
             case 'ArrowUp':
                 angles.gamma += 5;
+                if(angles.gamma >= 360) angles.gamma -= 360;
                 break;
             case 'ArrowDown':
                 angles.gamma -= 5;
+                if(angles.gamma < 0) angles.gamma += 360;
                 break;
         }
     }
@@ -246,7 +247,7 @@ function setup(shaders)
 
     function boom(){
         changeColor([1.0, 0.0, 0.0]);
-        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.6, -4*0.7])
+        multTranslation([0.0, 1.6, -4*0.7])
         multScale([0.7, 2.0, 0.7]);
         for (let i = 0; i < BOOM_SIZE; i++){
             pushMatrix();
@@ -280,6 +281,7 @@ function setup(shaders)
     }
 
     function counterWeight(){
+        pushMatrix()
         changeColor([1.0, 1.0, 1.0]);
         multScale([1.0, 1.5, 1.0]);
         multTranslation([0.0, -0.82, 1.0]);
@@ -320,7 +322,10 @@ function setup(shaders)
                     counterWeight();
                     trolley();
                     pushMatrix();
-                    hook();
+                        hook();
+                    popMatrix()
+                popMatrix()
+            popMatrix()
         popMatrix();
     }
 
