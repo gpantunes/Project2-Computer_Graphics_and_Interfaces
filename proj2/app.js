@@ -7,7 +7,6 @@ import { GUI } from "../libs/dat.gui.module.js"
 import * as SPHERE from '../libs/objects/sphere.js';
 import * as CUBE from '../libs/objects/cube.js';
 import * as CYLINDER from '../libs/objects/cylinder.js';
-import * as PYRAMID from '../libs/objects/pyramid.js';
 
 
 /** @type WebGLRenderingContext */
@@ -326,6 +325,9 @@ function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
                     trolley(TROLLEY_POSITION);
                     pushMatrix();
                         hook(HOOK_LENGTH);
+                    popMatrix();
+                popMatrix();
+            popMatrix();
         popMatrix();
     }
 
