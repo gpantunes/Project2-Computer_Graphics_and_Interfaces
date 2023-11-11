@@ -45,6 +45,8 @@ let ROTATION_ANGLE = 0;
 let TROLLEY_POSITION = BASE_SQUARE_COUNT - 1;
 let HOOK_LENGTH = 10;
 
+let folder;
+
 
 function setup(shaders)
 {
@@ -171,7 +173,7 @@ function setup(shaders)
             dummy: function () {}
         }
         const gui = new GUI()
-        const folder = gui.addFolder('Angles')
+        folder = gui.addFolder('Angles')
         folder.add(angles, 'theta', 0.0, 360)
         folder.add(angles, "gamma", 0.0, 360)
         folder.open()
@@ -300,6 +302,8 @@ function setup(shaders)
 
         if(axoview) axonometric()
 
+        folder.updateDisplay()
+
         loadMatrix(mView);
         pushMatrix()
             ground();
@@ -319,6 +323,7 @@ function setup(shaders)
                     hook();
         popMatrix();
     }
+
 
 }
 
