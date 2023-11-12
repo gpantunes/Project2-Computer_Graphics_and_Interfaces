@@ -75,10 +75,10 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case 'w':
-                HOOK_LENGTH = Math.min(125, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 's':
-                HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
+                HOOK_LENGTH = Math.min(125, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
