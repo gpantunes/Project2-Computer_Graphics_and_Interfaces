@@ -68,7 +68,7 @@ function setup(shaders)
 
     let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)                 //The last value is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
     let ROTATION_ANGLE = 0;
-    let TROLLEY_POSITION = 7;
+    let TROLLEY_POSITION = 8;
     let HOOK_LENGTH = 10;
     hookOpen = true;
 
@@ -84,7 +84,7 @@ function setup(shaders)
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
                 break;
             case 'd':
-                TROLLEY_POSITION = Math.max(7, TROLLEY_POSITION-1);
+                TROLLEY_POSITION = Math.max(8, TROLLEY_POSITION-1);
                 break;
             case 'l':
                 ROTATION_ANGLE -= 5;
@@ -331,7 +331,7 @@ function counterWeight(){
     popMatrix();
 }
 
-function hook(HOOK_LENGTH) {
+/*function hook(HOOK_LENGTH) {
 
     //1.732
 
@@ -412,8 +412,50 @@ function hook(HOOK_LENGTH) {
                     multTranslation([0.0, 0.3, -1.6]);
                     uploadModelView();
                     CUBE.draw(gl, program, mode);
-                }*/
+                }
+}*/
+
+function hook (HOOK_LENGTH){
+    changeColor([0.0, 0.0, 1.0]);
+    //Fixed right part
+    pushMatrix()
+        multTranslation([0.0, -HOOK_LENGTH-1.05, 0.6]);
+        multRotationX(90);
+        multScale([0.2, 1.5, 0.2])
+        uploadModelView();
+        CYLINDER.draw(gl, program, mode);
+    popMatrix()
+    //Fixed left part
+    pushMatrix()
+        multTranslation([0.0, -HOOK_LENGTH-1.05, -0.6]);
+        multRotationX(90);
+        multScale([0.2, 1.5, 0.2])
+        uploadModelView();
+        CYLINDER.draw(gl, program, mode);
+    popMatrix()
+    //Movable right part
+    changeColor([0.0, 1.0, 0.0])
+    pushMatrix()
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
+        else multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
+        multRotationX(90);
+        if(hookOpen) multScale([0.1, 0.1, 10.0])
+        else multScale([0.2, 1.5, 0.2])
+        uploadModelView();
+        CYLINDER.draw(gl, program, gl.TRIANGLES);
+    popMatrix()
+    //Movable left part
+    pushMatrix()
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
+        else multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
+        multRotationX(90);
+        if(hookOpen) multScale([0.1, 0.1, 10.0])
+        else multScale([0.2, 1.5, 0.2])
+        uploadModelView();
+        CYLINDER.draw(gl, program, gl.TRIANGLES);
+    popMatrix()
 }
+
 
 function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
         pushMatrix()
