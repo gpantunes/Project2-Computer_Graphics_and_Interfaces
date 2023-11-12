@@ -78,7 +78,7 @@ function setup(shaders)
                 HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 's':
-                HOOK_LENGTH = Math.min(125, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.min(90+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
