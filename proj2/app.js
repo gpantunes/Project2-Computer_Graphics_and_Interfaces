@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
-import { ortho, lookAt, flatten, mult } from "../libs/MV.js";
+import { ortho, lookAt, flatten, mult, inverse } from "../libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation, multRotationZ } from "../libs/stack.js";
 import { GUI } from "../libs/dat.gui.module.js"
 
@@ -18,9 +18,13 @@ let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
 let animation = true;   // Animation is running
 
 let angles;
-let scale = 1;
+let scale;
 
 let axoview = true;
+
+let folder;
+let program;
+let hookOpen;
 
 
 const GROUND_LENGTH = 65;
@@ -40,8 +44,6 @@ const HOOK_DESCENT_OFFSET = 5;
 
 const zoom = 30.0;
 
-let folder;
-let program
 
 function setup(shaders)
 {
@@ -57,16 +59,18 @@ function setup(shaders)
     let mView = lookAt([0, 0, 200], [0, 0, 0], [0, 1, 0]);
 
     mode = gl.LINES;
+    scale = 1;
 
-    
-    window.addEventListener("resize", resize_canvas);
     resize_canvas();
+    window.addEventListener("resize", resize_canvas);
+    
 
 
     let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)                 //The last value is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
     let ROTATION_ANGLE = 0;
     let TROLLEY_POSITION = 7;
     let HOOK_LENGTH = 10;
+    hookOpen = true;
 
     document.onkeydown = function(event) {
         switch(event.key) {
@@ -143,6 +147,8 @@ function setup(shaders)
                 angles.gamma -= 5;
                 if(angles.gamma < 0) angles.gamma += 360;
                 break;
+            case '9':
+                hookOpen = !hookOpen;
         }
     }
 
@@ -181,7 +187,7 @@ function setup(shaders)
         mView = modelView()
         popMatrix()
     }
-    function doGUI(){
+    function doGUI() {
         angles = {
             theta: 50,
             gamma: 15,
@@ -225,108 +231,189 @@ function setup(shaders)
         multScale([scale, scale, scale]);
         ground();
         crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH);
-}
+    }
 }
 
 
-function uploadModelView()
-{
+function uploadModelView() {
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
 }
 
 function changeColor(rgb, ){
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), rgb);
-    }
+    gl.uniform3fv(gl.getUniformLocation(program, "uColor"), rgb);
+}
 
-function ground()
-    {
-        pushMatrix();
-        gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH*1.0);
-        multScale([GROUND_LENGTH, 1, GROUND_LENGTH])
-        uploadModelView(program);
-        CUBE.draw(gl, program, gl.TRIANGLES);
-        gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), 0.0);
-        popMatrix();
-
-    }
+function ground() {
+    pushMatrix();
+    gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH*1.0);
+    multScale([GROUND_LENGTH, 1, GROUND_LENGTH])
+    uploadModelView();
+    CUBE.draw(gl, program, gl.TRIANGLES);
+    gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), 0.0);
+    popMatrix();
+}
 
 function base(){
-        changeColor([1.0, 1.0, 0.0], program);
-        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05, 0.0])
-        for (let i = 0; i < BASE_SQUARE_COUNT; i++){
-            pushMatrix()
-            multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
-            multTranslation([0, i, 0]);
-            uploadModelView(program);
-            CUBE.draw(gl, program, mode);
-            popMatrix();
-        }
+    changeColor([1.0, 1.0, 0.0]);
+    multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05, 0.0])
+    for (let i = 0; i < BASE_SQUARE_COUNT; i++){
+        pushMatrix()
+        multScale([BASE_SQUARE_SIDE, BASE_SQUARE_SIDE, BASE_SQUARE_SIDE]);
+        multTranslation([0, i, 0]);
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+        popMatrix();
     }
+}
 
 function baseLift(BASE_LIFT){
-        changeColor([1.0, 1.0, 0.0], program);
-        multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05+BASE_LIFT, 0.0])
-        for (let i = 0; i < LIFT_SQUARE_COUNT; i++){
-            if(i < LIFT_SQUARE_COUNT-1) pushMatrix();
-            multScale([LIFT_SQUARE_SIDE, BASE_SQUARE_SIDE, LIFT_SQUARE_SIDE]);
-            multTranslation([0, i, 0]);
-            uploadModelView(program);
-            CUBE.draw(gl, program, mode);
-            if(i < LIFT_SQUARE_COUNT-1) popMatrix();
-        }
+    changeColor([1.0, 1.0, 0.0]);
+    multTranslation([0.0, (BASE_SQUARE_SIDE+1)*0.5+0.05+BASE_LIFT, 0.0])
+    for (let i = 0; i < LIFT_SQUARE_COUNT; i++){
+        if(i < LIFT_SQUARE_COUNT-1) pushMatrix();
+        multScale([LIFT_SQUARE_SIDE, BASE_SQUARE_SIDE, LIFT_SQUARE_SIDE]);
+        multTranslation([0, i, 0]);
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+        if(i < LIFT_SQUARE_COUNT-1) popMatrix();
     }
+}
 
 function rotationCylinder(ROTATION_ANGLE){
-        changeColor([0.5, 0.5, 0.5], program);
-        multScale([3, 0.5, 3]);
-        multRotationY(ROTATION_ANGLE);
-        multTranslation([0, 1.5, 0]);
-        uploadModelView(program);
-        CYLINDER.draw(gl, program, mode);
-    }
+    changeColor([0.5, 0.5, 0.5]);
+    multScale([3, 0.5, 3]);
+    multRotationY(ROTATION_ANGLE);
+    multTranslation([0, 1.5, 0]);
+    uploadModelView();
+    CYLINDER.draw(gl, program, mode);
+}
 
 function boom(){
-        changeColor([1.0, 0.0, 0.0], program);
-        multTranslation([0.0, 1.6, -4*0.7])
-        multScale([0.7, 2.0, 0.7]);
-        for (let i = 0; i < BOOM_SIZE; i++){
-            pushMatrix();
-            multRotationX(90);
-            multTranslation([0, i, 0]);
-            uploadModelView(program);
-            CUBE.draw(gl, program, mode);
-            popMatrix();
-        }
+    changeColor([1.0, 0.0, 0.0]);
+    multTranslation([0.0, 1.6, -4*0.7])
+    multScale([0.7, 2.0, 0.7]);
+    for (let i = 0; i < BOOM_SIZE; i++){
+        pushMatrix();
+        multRotationX(90);
+        multTranslation([0, i, 0]);
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+        popMatrix();
     }
+}
 
 function trolley(TROLLEY_POSITION){
-        changeColor([0.0, 1.0, 0.0], program);
-        multScale([1.0, 0.1, 1.0]);
-        multTranslation([0.0, -6.0, TROLLEY_POSITION]);
-        uploadModelView(program);
-        CUBE.draw(gl, program, mode);
-    }
+    changeColor([0.0, 1.0, 0.0]);
+    multScale([1.0, 0.1, 1.0]);
+    multTranslation([0.0, -6.0, TROLLEY_POSITION]);
+    uploadModelView();
+    CUBE.draw(gl, program, mode);
+}
 
 
-function hook(HOOK_LENGTH){
-        changeColor([1.0, 1.0, 1.0], program);
-        pushMatrix();
-            multTranslation([0.0, -1.0-HOOK_LENGTH/2, 0.0]);
-            multScale([0.1, HOOK_LENGTH, 0.1]);
-            uploadModelView(program);
-            CYLINDER.draw(gl, program, mode);
-        popMatrix();
-    }
+function wireRope(HOOK_LENGTH){
+    pushMatrix();
+        changeColor([1.0, 1.0, 1.0]);
+        multTranslation([0.0, -1.0-HOOK_LENGTH/2, 0.0]);
+        multScale([0.1, HOOK_LENGTH, 0.1]);
+        uploadModelView();
+        CYLINDER.draw(gl, program, mode);
+    popMatrix();
+}
 
 function counterWeight(){
-        pushMatrix()
-        changeColor([1.0, 1.0, 1.0], program);
-        multScale([1.0, 1.5, 1.0]);
-        multTranslation([0.0, -0.82, 1.0]);
-        uploadModelView(program);
-        CUBE.draw(gl, program, gl.TRIANGLES);
+    pushMatrix()
+    changeColor([1.0, 1.0, 1.0]);
+    multScale([1.0, 1.5, 1.0]);
+    multTranslation([0.0, -0.82, 1.0]);
+    uploadModelView();
+    CUBE.draw(gl, program, mode);
+    popMatrix();
+}
+
+function hook(HOOK_LENGTH) {
+
+    //1.732
+
+    multTranslation([0.0, -HOOK_LENGTH/3.3, 0.0]);
+
+    pushMatrix();
+    for(let i = 0; i < 10; i++){
+        pushMatrix();
+            changeColor([0.0, 0.0, 1.0]);
+            multScale([1, 0.5, 0.1]);
+            multRotationX(45);
+            multTranslation([0.0, -HOOK_LENGTH, HOOK_LENGTH + i]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
         popMatrix();
     }
+
+    for(let i = 0; i < 10; i++){
+        pushMatrix();
+            changeColor([0.0, 0.0, 1.0]);
+            multScale([1, 0.5, 0.1]);
+            multRotationX(-45);
+            multTranslation([0.0, -HOOK_LENGTH, -HOOK_LENGTH - i]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    for(let i = 0; i < 10; i++){
+        pushMatrix();
+            changeColor([0.0, 0.0, 1.0]);
+            multScale([1, 0.5, 0.1]);
+            if(hookOpen) multRotationX(60);
+            else multRotationX(90);
+            multTranslation([0, 0, HOOK_LENGTH + i]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    for(let i = 0; i < 10; i++){
+        pushMatrix();
+            changeColor([0.0, 0.0, 1.0]);
+            multScale([1, 0.5, 0.1]);
+            if(hookOpen) multRotationX(120);
+            else multRotationX(90);
+            multTranslation([0, 0, HOOK_LENGTH + i]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    popMatrix();
+
+
+    /*pushMatrix();
+        changeColor([0.0, 0.0, 1.0]);
+        multScale([0.8, 1.0, 0.8]);
+        multTranslation([0.0, -HOOK_LENGTH, 0.0]);
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+
+        pushMatrix();
+            multScale([0.3, 6, 0.3]);
+            multTranslation([0.0, -0.4, 0.8]);
+            uploadModelView()
+            CUBE.draw(gl, program, mode);
+
+            pushMatrix();
+                multScale([1.0, 0.2, 1.5]);
+                multTranslation([0.0, -1.9, -0.6]);
+                uploadModelView();
+                CUBE.draw(gl, program, mode);
+
+                if(!hookOpen){
+                    pushMatrix();
+                    multScale([1.0, 3.0, 0.3]);
+                    multTranslation([0.0, 0.3, -1.6]);
+                    uploadModelView();
+                    CUBE.draw(gl, program, mode);
+                }*/
+}
 
 function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
         pushMatrix()
@@ -341,7 +428,10 @@ function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
                     counterWeight();
                     trolley(TROLLEY_POSITION);
                     pushMatrix();
-                        hook(HOOK_LENGTH);
+                        wireRope(HOOK_LENGTH);
+                        pushMatrix();
+                            hook(HOOK_LENGTH);
+                        popMatrix();
                     popMatrix();
                 popMatrix();
             popMatrix();
