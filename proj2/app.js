@@ -18,6 +18,7 @@ let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
 let animation = true;   // Animation is running
 
 let angles;
+let scale = 1;
 
 let axoview = true;
 
@@ -57,8 +58,10 @@ function setup(shaders)
 
     mode = gl.LINES;
 
-    resize_canvas();
+    
     window.addEventListener("resize", resize_canvas);
+    resize_canvas();
+
 
     let BASE_LIFT = Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE)                 //The last value is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
     let ROTATION_ANGLE = 0;
@@ -143,6 +146,19 @@ function setup(shaders)
         }
     }
 
+    document.addEventListener("wheel", function(event){
+        var deltaY = event.deltaY;
+        //scroll down
+        if (deltaY > 0) {
+           scale -= 0.05;
+           if(scale < 0.05) scale = 0.05;
+        }
+        //sroll up
+        else if (deltaY < 0) {
+            scale += 0.05;
+        }
+    });
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
     SPHERE.init(gl);
@@ -206,6 +222,7 @@ function setup(shaders)
         folder.updateDisplay()
 
         loadMatrix(mView);
+        multScale([scale, scale, scale]);
         ground();
         crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH);
 }
