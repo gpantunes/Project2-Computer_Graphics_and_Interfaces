@@ -42,7 +42,11 @@ const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 const BOOM_SIZE = 20;               //PRE: BOOM_SIZE >= 10
 const HOOK_DESCENT_OFFSET = 5;
 
+
+
 const zoom = 30.0;
+
+
 
 
 function setup(shaders)
@@ -70,7 +74,9 @@ function setup(shaders)
     let ROTATION_ANGLE = 0;
     let TROLLEY_POSITION = 8;
     let HOOK_LENGTH = 10;
-    hookOpen = true;
+    hookOpen = false;
+
+    let BLOCK_DROPPED = false;
 
     document.onkeydown = function(event) {
         switch(event.key) {
@@ -78,7 +84,7 @@ function setup(shaders)
                 HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 's':
-                HOOK_LENGTH = Math.min(90+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
@@ -130,6 +136,7 @@ function setup(shaders)
             case 'k':
                 //The last Math.max is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE));
+                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH);
                 break;
             case 'ArrowLeft':
                 angles.theta += 5;
@@ -436,28 +443,38 @@ function hook (HOOK_LENGTH){
     //Movable right part
     changeColor([0.0, 1.0, 0.0])
     pushMatrix()
-        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
-        else multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
+        else multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([0.1, 0.1, 10.0])
-        else multScale([0.2, 1.5, 0.2])
+        if(hookOpen) multScale([1.0, 1.5, 1.0])
+        else multScale([0.2, 0.2, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
     popMatrix()
     //Movable left part
     pushMatrix()
-        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
-        else multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
+        else multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([0.1, 0.1, 10.0])
-        else multScale([0.2, 1.5, 0.2])
+        if(hookOpen) multScale([1.0, 1.5, 1.0])
+        else multScale([0.1, 0.1, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
     popMatrix()
 }
+function craneBlock(HOOK_LENGTH){
+    pushMatrix()
+        multTranslation([0.0, -HOOK_LENGTH+10.0, 0.0]);
+        changeColor([1.0, 1.0, 0.0]);
+        multScale([2.6, 22.0, 2.6])
+        multTranslation([0.0, -1.1, 0.0])
+        uploadModelView()
+        CUBE.draw(gl, program, mode);
+    popMatrix()
+}
 
 
-function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
+function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH, BLOCK_DROPPED){
         pushMatrix()
             base();
         popMatrix();
@@ -471,9 +488,8 @@ function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
                     trolley(TROLLEY_POSITION);
                     pushMatrix();
                         wireRope(HOOK_LENGTH);
-                        pushMatrix();
-                            hook(HOOK_LENGTH);
-                        popMatrix();
+                        hook(HOOK_LENGTH);
+                        if(!BLOCK_DROPPED) craneBlock(HOOK_LENGTH)
                     popMatrix();
                 popMatrix();
             popMatrix();
