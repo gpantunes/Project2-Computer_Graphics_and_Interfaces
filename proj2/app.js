@@ -42,7 +42,11 @@ const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 const BOOM_SIZE = 20;               //PRE: BOOM_SIZE >= 10
 const HOOK_DESCENT_OFFSET = 5;
 
+
+
 const zoom = 30.0;
+
+
 
 
 function setup(shaders)
@@ -70,7 +74,9 @@ function setup(shaders)
     let ROTATION_ANGLE = 0;
     let TROLLEY_POSITION = 8;
     let HOOK_LENGTH = 10;
-    hookOpen = true;
+    hookOpen = false;
+
+    let BLOCK_DROPPED = false;
 
     document.onkeydown = function(event) {
         switch(event.key) {
@@ -78,7 +84,7 @@ function setup(shaders)
                 HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 's':
-                HOOK_LENGTH = Math.min(105+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
@@ -107,17 +113,17 @@ function setup(shaders)
                 break;
             case '1':
                 // Front view
-                mView = lookAt([0, 100, 300], [0, 10, 0], [0, 1, 0]);
+                mView = lookAt([0, 0, 200], [0, 0, 0], [0, 1, 0]);
                 axoview = false;
                 break;
             case '2':
                 // Top view
-                mView = lookAt([0, 500, 0], [0, 0, 0], [0, 0, -1]);
+                mView = lookAt([0, 200, 0], [0, 0, 0], [0, 0, -1]);
                 axoview = false;
                 break;
             case '3':
                 // Right view
-                mView = lookAt([1, 0, 0], [0, 0, 0], [0, 1, 0]);
+                mView = lookAt([200, 0, 0], [0, 0, 0], [0, 1, 0]);
                 axoview = false;
                 break;
             case '4':
@@ -130,6 +136,7 @@ function setup(shaders)
             case 'k':
                 //The last Math.max is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE));
+                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH);
                 break;
             case 'ArrowLeft':
                 angles.theta += 5;
@@ -331,90 +338,6 @@ function counterWeight(){
     popMatrix();
 }
 
-/*function hook(HOOK_LENGTH) {
-
-    //1.732
-
-    multTranslation([0.0, -HOOK_LENGTH/3.3, 0.0]);
-
-    pushMatrix();
-    for(let i = 0; i < 10; i++){
-        pushMatrix();
-            changeColor([0.0, 0.0, 1.0]);
-            multScale([1, 0.5, 0.1]);
-            multRotationX(45);
-            multTranslation([0.0, -HOOK_LENGTH, HOOK_LENGTH + i]);
-            uploadModelView();
-            CUBE.draw(gl, program, mode);
-        popMatrix();
-    }
-
-    for(let i = 0; i < 10; i++){
-        pushMatrix();
-            changeColor([0.0, 0.0, 1.0]);
-            multScale([1, 0.5, 0.1]);
-            multRotationX(-45);
-            multTranslation([0.0, -HOOK_LENGTH, -HOOK_LENGTH - i]);
-            uploadModelView();
-            CUBE.draw(gl, program, mode);
-        popMatrix();
-    }
-
-    for(let i = 0; i < 10; i++){
-        pushMatrix();
-            changeColor([0.0, 0.0, 1.0]);
-            multScale([1, 0.5, 0.1]);
-            if(hookOpen) multRotationX(60);
-            else multRotationX(90);
-            multTranslation([0, 0, HOOK_LENGTH + i]);
-            uploadModelView();
-            CUBE.draw(gl, program, mode);
-        popMatrix();
-    }
-
-    for(let i = 0; i < 10; i++){
-        pushMatrix();
-            changeColor([0.0, 0.0, 1.0]);
-            multScale([1, 0.5, 0.1]);
-            if(hookOpen) multRotationX(120);
-            else multRotationX(90);
-            multTranslation([0, 0, HOOK_LENGTH + i]);
-            uploadModelView();
-            CUBE.draw(gl, program, mode);
-        popMatrix();
-    }
-
-    popMatrix();
-
-
-    /*pushMatrix();
-        changeColor([0.0, 0.0, 1.0]);
-        multScale([0.8, 1.0, 0.8]);
-        multTranslation([0.0, -HOOK_LENGTH, 0.0]);
-        uploadModelView();
-        CUBE.draw(gl, program, mode);
-
-        pushMatrix();
-            multScale([0.3, 6, 0.3]);
-            multTranslation([0.0, -0.4, 0.8]);
-            uploadModelView()
-            CUBE.draw(gl, program, mode);
-
-            pushMatrix();
-                multScale([1.0, 0.2, 1.5]);
-                multTranslation([0.0, -1.9, -0.6]);
-                uploadModelView();
-                CUBE.draw(gl, program, mode);
-
-                if(!hookOpen){
-                    pushMatrix();
-                    multScale([1.0, 3.0, 0.3]);
-                    multTranslation([0.0, 0.3, -1.6]);
-                    uploadModelView();
-                    CUBE.draw(gl, program, mode);
-                }
-}*/
-
 function hook (HOOK_LENGTH){
     changeColor([0.0, 0.0, 1.0]);
     //Fixed right part
@@ -436,28 +359,38 @@ function hook (HOOK_LENGTH){
     //Movable right part
     changeColor([0.0, 1.0, 0.0])
     pushMatrix()
-        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
-        else multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
+        else multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([0.1, 0.1, 10.0])
-        else multScale([0.2, 1.5, 0.2])
+        if(hookOpen) multScale([1.0, 1.5, 1.0])
+        else multScale([0.2, 0.2, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
     popMatrix()
     //Movable left part
     pushMatrix()
-        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
-        else multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
+        if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
+        else multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([0.1, 0.1, 10.0])
-        else multScale([0.2, 1.5, 0.2])
+        if(hookOpen) multScale([1.0, 1.5, 1.0])
+        else multScale([0.1, 0.1, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
     popMatrix()
 }
+function craneBlock(HOOK_LENGTH){
+    pushMatrix()
+        multTranslation([0.0, -HOOK_LENGTH+10.0, 0.0]);
+        changeColor([1.0, 1.0, 0.0]);
+        multScale([2.6, 22.0, 2.6])
+        multTranslation([0.0, -1.1, 0.0])
+        uploadModelView()
+        CUBE.draw(gl, program, mode);
+    popMatrix()
+}
 
 
-function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
+function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH, BLOCK_DROPPED){
         pushMatrix()
             base();
         popMatrix();
@@ -471,9 +404,8 @@ function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
                     trolley(TROLLEY_POSITION);
                     pushMatrix();
                         wireRope(HOOK_LENGTH);
-                        pushMatrix();
-                            hook(HOOK_LENGTH);
-                        popMatrix();
+                        hook(HOOK_LENGTH);
+                        if(!BLOCK_DROPPED) craneBlock(HOOK_LENGTH)
                     popMatrix();
                 popMatrix();
             popMatrix();
