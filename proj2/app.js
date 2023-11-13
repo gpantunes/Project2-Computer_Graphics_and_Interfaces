@@ -1,5 +1,5 @@
-import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
-import { ortho, lookAt, flatten } from "../libs/MV.js";
+import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../../libs/utils.js";
+import { ortho, lookAt, flatten } from "../../libs/MV.js";
 import {
     modelView,
     loadMatrix,
@@ -9,13 +9,12 @@ import {
     popMatrix,
     multRotationX,
     multTranslation,
-} from "../libs/stack.js";
-import { GUI } from "../libs/dat.gui.module.js"
+} from "../../libs/stack.js";
 
 
-import * as SPHERE from '../libs/objects/sphere.js';
-import * as CUBE from '../libs/objects/cube.js';
-import * as CYLINDER from '../libs/objects/cylinder.js';
+import * as SPHERE from '../../libs/objects/sphere.js';
+import * as CUBE from '../../libs/objects/cube.js';
+import * as CYLINDER from '../../libs/objects/cylinder.js';
 
 
 /** @type WebGLRenderingContext */
@@ -75,6 +74,11 @@ function setup(shaders)
     program = buildProgramFromSources(gl, shaders["shader.vert"], shaders["shader.frag"]);
 
     let mProjection =ortho(-aspect*zoom,aspect*zoom, -zoom, zoom,0,5000);
+
+    angles = {
+        theta: 50,
+        gamma: 15,
+    }
 
     mView = lookAt([0, 0, 200], [0, 0, 0], [0, 1, 0]);
 
@@ -208,8 +212,7 @@ function setup(shaders)
     
     window.requestAnimationFrame(render);
 
-    doGUI()
-
+    
     function axonometric(){
         let m = lookAt([-200, 0, 0], [0, 0, 0], [0, 1, 0]);
         pushMatrix()
@@ -220,19 +223,7 @@ function setup(shaders)
         mView = modelView()
         popMatrix()
     }
-    function doGUI() {
-        angles = {
-            theta: 50,
-            gamma: 15,
-            dummy: function () {}
-        }
-        const gui = new GUI()
-        folder = gui.addFolder('Angles')
-        folder.add(angles, 'theta', 0.0, 360)
-        folder.add(angles, "gamma", 0.0, 360)
-        folder.open()
-    }
-
+    
     function resize_canvas()
     {
         canvas.width = window.innerWidth;
@@ -257,8 +248,6 @@ function setup(shaders)
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
 
         if(axoview) axonometric()
-
-        folder.updateDisplay()
 
         loadMatrix(mView);
         multScale([scale, scale, scale]);
