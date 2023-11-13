@@ -116,8 +116,8 @@ function setup(shaders)
                 ROTATION_ANGLE += 5;
                 break;
             case 'r':
-                angles.theta = 0;
-                angles.gamma = 0;
+                angles.theta = 50;
+                angles.gamma = 15;
                 break;
             case '+':
                 if(animation) speed *= 1.1;
