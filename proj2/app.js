@@ -1,6 +1,15 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../libs/utils.js";
-import { ortho, lookAt, flatten, mult, inverse } from "../libs/MV.js";
-import {modelView, loadMatrix, multRotationY, multScale, pushMatrix, popMatrix, multRotationX, multTranslation, multRotationZ } from "../libs/stack.js";
+import { ortho, lookAt, flatten } from "../libs/MV.js";
+import {
+    modelView,
+    loadMatrix,
+    multRotationY,
+    multScale,
+    pushMatrix,
+    popMatrix,
+    multRotationX,
+    multTranslation,
+} from "../libs/stack.js";
 import { GUI } from "../libs/dat.gui.module.js"
 
 
@@ -42,9 +51,16 @@ const BASE_LIFT_OFFSET = 0.5*BASE_SQUARE_SIDE;
 const BOOM_SIZE = 20;               //PRE: BOOM_SIZE >= 10
 const HOOK_DESCENT_OFFSET = 5;
 
-
+const BLOCK_DESCENT_RATE = 0.1;
 
 const zoom = 30.0;
+
+let blockY;
+let blockDropped = false;
+let blockRotation;
+let blockTrolleyPosition;
+
+let mView;
 
 
 
@@ -60,7 +76,7 @@ function setup(shaders)
 
     let mProjection =ortho(-aspect*zoom,aspect*zoom, -zoom, zoom,0,5000);
 
-    let mView = lookAt([0, 0, 200], [0, 0, 0], [0, 1, 0]);
+    mView = lookAt([0, 0, 200], [0, 0, 0], [0, 1, 0]);
 
     mode = gl.LINES;
     scale = 1;
@@ -76,7 +92,8 @@ function setup(shaders)
     let HOOK_LENGTH = 10;
     hookOpen = false;
 
-    let BLOCK_DROPPED = false;
+
+
 
     document.onkeydown = function(event) {
         switch(event.key) {
@@ -84,7 +101,7 @@ function setup(shaders)
                 HOOK_LENGTH = Math.max(0, HOOK_LENGTH-HOOK_DESCENT_OFFSET)
                 break;
             case 's':
-                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
+                HOOK_LENGTH = Math.min(101+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH+HOOK_DESCENT_OFFSET);
                 break;
             case 'a':
                 TROLLEY_POSITION = Math.min(BOOM_SIZE-1, TROLLEY_POSITION+1);
@@ -99,8 +116,9 @@ function setup(shaders)
                 ROTATION_ANGLE += 5;
                 break;
             case 'r':
-                angles.theta = 0;
-                angles.gamma = 0;
+                angles.theta = 50;
+                angles.gamma = 15;
+                break;
             case '+':
                 if(animation) speed *= 1.1;
                 break;
@@ -134,9 +152,9 @@ function setup(shaders)
                 BASE_LIFT = Math.min(BASE_LIFT+BASE_LIFT_OFFSET, (BASE_SQUARE_COUNT-2)*BASE_SQUARE_SIDE);
                 break;
             case 'k':
-                //The last Math.max is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
+                //The second Math.max is used to avoid deformation if BASE_SQUARE_COUNT > LIFT_SQUARE_COUNT
                 BASE_LIFT = Math.max(BASE_LIFT-BASE_LIFT_OFFSET, Math.max(0, (BASE_SQUARE_COUNT-LIFT_SQUARE_COUNT)*BASE_SQUARE_SIDE));
-                HOOK_LENGTH = Math.min(99+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH);
+                HOOK_LENGTH = Math.min(101+BASE_LIFT*BASE_SQUARE_SIDE*2.5, HOOK_LENGTH);
                 break;
             case 'ArrowLeft':
                 angles.theta += 5;
@@ -156,6 +174,14 @@ function setup(shaders)
                 break;
             case '9':
                 hookOpen = !hookOpen;
+                if (hookOpen && !blockDropped){
+                    blockDropped = true;
+                }
+                else if (!hookOpen && blockDropped){
+                    if(HOOK_LENGTH == 101+BASE_LIFT*BASE_SQUARE_SIDE*2.5 && TROLLEY_POSITION == blockTrolleyPosition && Math.abs(ROTATION_ANGLE-blockRotation) <= 5){
+                        blockDropped = false;
+                    }
+                }
         }
     }
 
@@ -166,7 +192,7 @@ function setup(shaders)
            scale -= 0.05;
            if(scale < 0.05) scale = 0.05;
         }
-        //sroll up
+        //scroll up
         else if (deltaY < 0) {
             scale += 0.05;
         }
@@ -178,7 +204,7 @@ function setup(shaders)
     CUBE.init(gl);
     CYLINDER.init(gl);
 
-    gl.enable(gl.DEPTH_TEST);   // Enables Z-buffer depth test
+    gl.enable(gl.DEPTH_TEST);
     
     window.requestAnimationFrame(render);
 
@@ -207,7 +233,7 @@ function setup(shaders)
         folder.open()
     }
 
-    function resize_canvas(event)
+    function resize_canvas()
     {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -252,7 +278,7 @@ function changeColor(rgb, ){
 
 function ground() {
     pushMatrix();
-    gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH*1.0);
+    gl.uniform1f(gl.getUniformLocation(program, "mGroundLength"), GROUND_LENGTH);
     multScale([GROUND_LENGTH, 1, GROUND_LENGTH])
     uploadModelView();
     CUBE.draw(gl, program, gl.TRIANGLES);
@@ -362,7 +388,7 @@ function hook (HOOK_LENGTH){
         if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, 2.1]);
         else multTranslation([0.0, -HOOK_LENGTH-6.4, 1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([1.0, 1.5, 1.0])
+        if(hookOpen) multScale([0.2, 1.5, 0.2])
         else multScale([0.2, 0.2, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
@@ -372,25 +398,29 @@ function hook (HOOK_LENGTH){
         if(hookOpen) multTranslation([0.0, -HOOK_LENGTH-1.4, -2.1]);
         else multTranslation([0.0, -HOOK_LENGTH-6.4, -1.4]);
         multRotationX(90);
-        if(hookOpen) multScale([1.0, 1.5, 1.0])
-        else multScale([0.1, 0.1, 10.0])
+        if(hookOpen) multScale([0.2, 1.5, 0.2])
+        else multScale([0.2, 0.2, 10.0])
         uploadModelView();
         CYLINDER.draw(gl, program, gl.TRIANGLES);
     popMatrix()
 }
-function craneBlock(HOOK_LENGTH){
-    pushMatrix()
-        multTranslation([0.0, -HOOK_LENGTH+10.0, 0.0]);
-        changeColor([1.0, 1.0, 0.0]);
-        multScale([2.6, 22.0, 2.6])
-        multTranslation([0.0, -1.1, 0.0])
-        uploadModelView()
-        CUBE.draw(gl, program, mode);
-    popMatrix()
+function drawBlock(ROTATION_ANGLE, TROLLEY_POSITION, BASE_LIFT, HOOK_LENGTH){
+    changeColor([0.5, 0.5, 1.0])
+    if(!blockDropped){
+        blockRotation = ROTATION_ANGLE;
+        blockTrolleyPosition = TROLLEY_POSITION;
+    }
+    multScale([4.0, 4.0, 4.0])
+    multRotationY(blockRotation);
+    if(blockDropped) blockY = Math.max(0.65,blockY-BLOCK_DESCENT_RATE)
+    else blockY = BASE_LIFT/4-HOOK_LENGTH/20.0+5.7;
+    multTranslation([0.0, blockY, blockTrolleyPosition/2.37-1.7])
+    uploadModelView()
+    CUBE.draw(gl, program, mode);
 }
 
 
-function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH, BLOCK_DROPPED){
+function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH){
         pushMatrix()
             base();
         popMatrix();
@@ -405,11 +435,13 @@ function crane(BASE_LIFT, ROTATION_ANGLE, TROLLEY_POSITION, HOOK_LENGTH, BLOCK_D
                     pushMatrix();
                         wireRope(HOOK_LENGTH);
                         hook(HOOK_LENGTH);
-                        if(!BLOCK_DROPPED) craneBlock(HOOK_LENGTH)
                     popMatrix();
                 popMatrix();
             popMatrix();
         popMatrix();
+        pushMatrix()
+            drawBlock(ROTATION_ANGLE, TROLLEY_POSITION, BASE_LIFT, HOOK_LENGTH);
+        popMatrix()
     }
 
 
